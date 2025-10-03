@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Unicode変換ツール（完全版）</title>
+<style>
+  textarea { width: 100%; height: 80px; margin-bottom: 10px; }
+  input[type=number] { width: 60px; }
+  button { margin-right: 5px; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h3>Unicode変換ツール（完全版）</h3>
+
+<textarea id="ioArea" placeholder="文字列またはコードを入力"></textarea><br>
+<button id="clearInputBtn">入力をクリア</button><br>
+
+進数: <input type="number" id="radixInput" min="2" max="36" value="16"><br>
+
+<button id="convertBtn">文字列 → Unicodeコード</button>
+<button id="decodeBtn">コード → 文字列</button>
+<button id="copyBtn">出力をコピー</button>
+<br>
+<button id="clearBtn">出力をクリア</button>
+
+<textarea id="outputArea" placeholder="出力" readonly></textarea>
+
+<script>
+const ioArea = document.getElementById("ioArea");
+const radixInput = document.getElementById("radixInput");
+const outputArea = document.getElementById("outputArea");
+const convertBtn = document.getElementById("convertBtn");
+const decodeBtn = document.getElementById("decodeBtn");
+const copyBtn = document.getElementById("copyBtn");
+const clearBtn = document.getElementById("clearBtn");
+const clearInputBtn = document.getElementById("clearInputBtn");
+
+// 文字列 → コード
+convertBtn.addEventListener("click", () => {
+  const str = ioArea.value;
+  let radix = parseInt(radixInput.value);
+  if (!radix || radix < 2 || radix > 36) { alert("進数は2~36で指定してください"); return; }
+
+  const output = [];
+  for (const char of str) {
+    let codeStr = char.codePointAt(0).toString(radix);
+    if (radix >= 2 && radix <= 9) codeStr = codeStr.padStart(2,'0'); // 2~9進数は0埋め
+    output.push(codeStr);
+  }
+
+  // 先頭に進数定義を16進数で埋め込む
+  const radixDef = radix.toString(16).toUpperCase().padStart(2,'0');
+  outputArea.value = radixDef + " " + output.join(" ");
+
+  // 文字列入力なのでバー有効・ボタン調整
+  radixInput.disabled = false;
+  convertBtn.disabled = false;
+  decodeBtn.disabled = true;
+});
+
+// コード → 文字列
+decodeBtn.addEventListener("click", () => {
+  const codesRaw = ioArea.value.trim().split(/\s+/);
+  if (codesRaw.length < 2) { alert("コード入力時は「進数(16進数) コード1 コード2 ...」形式"); return; }
+
+  let radix;
+  try { radix = parseInt(codesRaw[0],16); } 
+  catch { alert("進数定義が不正です"); return; }
+
+  const codes = codesRaw.slice(1);
+  const output = [];
+  try {
+    for (const c of codes) {
+      const num = parseInt(c, radix);
+      output.push(String.fromCodePoint(num));
+    }
+    outputArea.value = output.join("");
+  } catch {
+    alert("コードが不正です");
+  }
+});
+
+// 出力コピー
+copyBtn.addEventListener("click", () => {
+  outputArea.select();
+  document.execCommand("copy");
+  alert("出力をコピーしました");
+});
+
+// 出力クリア
+clearBtn.addEventListener("click", () => {
+  outputArea.value = "";
+});
+
+// 入力クリア
+clearInputBtn.addEventListener("click", () => {
+  ioArea.value = "";
+  radixInput.disabled = false;
+  convertBtn.disabled = false;
+  decodeBtn.disabled = true;
+});
+
+// 入力検知でコードか文字列か判定
+ioArea.addEventListener("input", () => {
+  const text = ioArea.value.trim();
+  const parts = text.split(/\s+/);
+  if (parts.length > 1) {
+    const radix = parseInt(parts[0],16);
+    if (!isNaN(radix) && radix >=2 && radix <=36) {
+      // コード入力
+      radixInput.value = radix;
+      radixInput.disabled = true;
+      convertBtn.disabled = true;
+      decodeBtn.disabled = false;
+      return;
+    }
+  }
+  // 文字列入力
+  radixInput.disabled = false;
+  convertBtn.disabled = false;
+  decodeBtn.disabled = true;
+});
+</script>
+
+</body>
+</html>
